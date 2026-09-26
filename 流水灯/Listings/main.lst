@@ -1,0 +1,102 @@
+C51 COMPILER V9.59.0.0   MAIN                                                              09/26/2026 00:17:21 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: F:\keilDownlaod\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings
+                    -\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <REGX52.H>
+   2          #include <stdio.h>
+   3          #include <intrins.H>
+   4          
+   5          
+   6          void Delay100ms(void) //@11.0592MHz
+   7          {
+   8   1        unsigned char data i, j;
+   9   1      
+  10   1        i = 180;
+  11   1        j = 73;
+  12   1        do
+  13   1        {
+  14   2          while (--j);
+  15   2        } while (--i);
+  16   1      }
+  17          
+  18          
+  19          void system_init()//初始化
+  20          {
+  21   1        P2 = 0x00;
+  22   1      }
+  23          
+  24          void led_disp(unsigned char addr,unsigned char enable)
+  25          {
+  26   1        static unsigned char temp;
+  27   1        static unsigned char temp_old;
+  28   1        
+  29   1        if(enable)
+  30   1          temp |= 0x01<<addr;
+  31   1        else
+  32   1          temp &= ~(0x01<<addr);
+  33   1        
+  34   1        if(temp != temp_old)
+  35   1        {
+  36   2          P2 = temp;//共阴极接法
+  37   2          temp_old = temp;
+  38   2        }
+  39   1          
+  40   1      }
+  41          
+  42          void led_watering()
+  43          {
+  44   1        static unsigned char i = 0;
+  45   1        unsigned char j;
+  46   1        
+  47   1        // 刷新显示缓冲区
+  48   1        for (j = 0; j < 8; j++)
+  49   1        {
+  50   2          led_disp(j,(j==i));
+  51   2          Delay100ms();
+  52   2        }
+  53   1        
+  54   1        // 移向下一个 LED
+C51 COMPILER V9.59.0.0   MAIN                                                              09/26/2026 00:17:21 PAGE 2   
+
+  55   1        if (i++ >= 8)
+  56   1        {
+  57   2          i = 0;
+  58   2        }
+  59   1      
+  60   1      }
+  61          
+  62          //
+  63          
+  64          int main()
+  65          {
+  66   1        system_init();
+  67   1        
+  68   1        while(1)
+  69   1        {
+  70   2          led_watering();
+  71   2        }
+  72   1        
+  73   1      }
+  74          
+  75          
+  76          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    117    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      3    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

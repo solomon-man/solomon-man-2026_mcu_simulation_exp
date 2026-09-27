@@ -1,0 +1,6 @@
+".\Objects\main.obj",
+".\Objects\key.obj",
+".\Objects\init.obj",
+".\Objects\led.obj" 
+TO ".\Objects\°´¼ü" 
+PRINT(".\Listings\°´¼ü.m51") RAMSIZE(256) 

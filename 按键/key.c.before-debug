@@ -1,0 +1,16 @@
+#include <key.H>
+
+unsigned char key_read()//°´¼üÉ¨Ãè
+{
+	unsigned char temp = 0;
+	ET0 = 0;
+	
+	if(P1_4==0)temp = 1;
+	if(P1_5==0)temp = 2;
+	if(P1_6==0)temp = 3;
+	if(P1_7==0)temp = 4;
+	
+	ET0 = 1;
+	
+	return temp;
+}

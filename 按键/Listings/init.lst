@@ -1,0 +1,31 @@
+C51 COMPILER V9.59.0.0   INIT                                                              09/27/2026 17:19:49 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE INIT
+OBJECT MODULE PLACED IN .\Objects\init.obj
+COMPILER INVOKED BY: F:\keilDownlaod\C51\BIN\C51.EXE init.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings
+                    -\init.lst) TABS(2) OBJECT(.\Objects\init.obj)
+
+line level    source
+
+   1          #include <init.H>
+   2          
+   3          void system_init()
+   4          {
+   5   1        P2 = 0xff;//LED初始化：全部熄灭
+   6   1        P1 |= 0xf0;//P1.4-P1.7置1作为按键输入
+   7   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =      7    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,7 @@
+#include <init.H>
+
+void system_init()
+{
+	P2 &= 0x00;//led初始化
+  P1 &= 0xff;//按键初始化
+}

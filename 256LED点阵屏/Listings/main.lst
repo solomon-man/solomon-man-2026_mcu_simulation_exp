@@ -1,0 +1,113 @@
+C51 COMPILER V9.59.0.0   MAIN                                                              10/03/2026 23:17:05 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: F:\keilDownlaod\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings
+                    -\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          
+   3          // 延时函数声明
+   4          void Delay_ms(unsigned int ms);
+   5          
+   6          // -------------------------------------------------------------
+   7          // "Hello World" 字符字模表（每列对应一个字节，高电平点亮，自顶向下 D7~D0）
+   8          // 字符点阵尺寸：大部分字符宽 5~6 列，末尾加 0x00 作为字符间隔
+   9          // -------------------------------------------------------------
+  10          unsigned char code Scroll_Text[] = {
+  11              // 前置 8 列空白，方便首个字符从屏幕右侧完全滚入
+  12              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  13          
+  14              // 'H'
+  15              0x7F, 0x08, 0x08, 0x08, 0x7F, 0x00,
+  16              // 'e'
+  17              0x38, 0x54, 0x54, 0x54, 0x18, 0x00,
+  18              // 'l'
+  19              0x00, 0x41, 0x7F, 0x01, 0x00, 0x00,
+  20              // 'l'
+  21              0x00, 0x41, 0x7F, 0x01, 0x00, 0x00,
+  22              // 'o'
+  23              0x38, 0x44, 0x44, 0x44, 0x38, 0x00,
+  24              // ' ' (空格)
+  25              0x00, 0x00, 0x00,
+  26              // 'W'
+  27              0x7F, 0x20, 0x18, 0x20, 0x7F, 0x00,
+  28              // 'o'
+  29              0x38, 0x44, 0x44, 0x44, 0x38, 0x00,
+  30              // 'r'
+  31              0x7C, 0x08, 0x04, 0x04, 0x08, 0x00,
+  32              // 'l'
+  33              0x00, 0x41, 0x7F, 0x01, 0x00, 0x00,
+  34              // 'd'
+  35              0x18, 0x24, 0x24, 0x28, 0x7F, 0x00,
+  36          
+  37              // 后置 8 列空白，让最后一个字符完全滚出屏幕
+  38              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+  39          };
+  40          
+  41          // 计算字模总列数
+  42          #define TOTAL_COLS (sizeof(Scroll_Text) / sizeof(Scroll_Text[0]))
+  43          
+  44          void main(void)
+  45          {
+  46   1          unsigned int offset;   // 当前滚动窗口起始列索引
+  47   1          unsigned char scan_i;  // 8列动态扫描索引
+  48   1          unsigned char frame;   // 每步滚动的停留帧数（控制流动速度）
+  49   1      
+  50   1          while (1)
+  51   1          {
+  52   2              // offset 从 0 滑动到最后一个窗口起始位置
+  53   2              for (offset = 0; offset <= TOTAL_COLS - 8; offset++)
+  54   2              {
+C51 COMPILER V9.59.0.0   MAIN                                                              10/03/2026 23:17:05 PAGE 2   
+
+  55   3                  // 每个位移步长刷新 20 帧（大约持续 160ms，数字越小滚动越快）
+  56   3                  for (frame = 0; frame < 20; frame++)
+  57   3                  {
+  58   4                      // 动态刷新当前 8x8 视窗里的 8 列
+  59   4                      for (scan_i = 0; scan_i < 8; scan_i++)
+  60   4                      {
+  61   5                          // 1. 消隐（关闭当前数据输出，防拖影）
+  62   5                          P0 = 0x00;
+  63   5      
+  64   5                          // 2. 74HC154 选通通道切换 (输入 A~D 对应 P1.0~P1.3)
+  65   5                          P1 = (P1 & 0xF0) | (scan_i & 0x0F);
+  66   5      
+  67   5                          // 3. 送出当前列的字模数据 (视窗偏移 + 当前列)
+  68   5                          // 如果点阵极性反了（亮暗颠倒），改为: P0 = ~Scroll_Text[offset + scan_i];
+  69   5                          P0 = Scroll_Text[offset + scan_i];
+  70   5      
+  71   5                          // 4. 扫描保持延时 1ms
+  72   5                          Delay_ms(1);
+  73   5                      }
+  74   4                  }
+  75   3              }
+  76   2          }
+  77   1      }
+  78          
+  79          /**
+  80           * @brief 毫秒延时函数（基于 11.0592MHz 或 12MHz 晶振）
+  81           */
+  82          void Delay_ms(unsigned int ms)
+  83          {
+  84   1          unsigned int x, y;
+  85   1          for (x = ms; x > 0; x--)
+  86   1              for (y = 110; y > 0; y--);
+  87   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    137    ----
+   CONSTANT SIZE    =     79    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       4
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

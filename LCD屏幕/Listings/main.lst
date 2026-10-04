@@ -1,0 +1,116 @@
+C51 COMPILER V9.59.0.0   MAIN                                                              10/04/2026 16:22:28 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: F:\keilDownlaod\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings
+                    -\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          #include <intrins.h>
+   3          
+   4          // 引脚定义（依据原理图连接）
+   5          sbit LCD_RS = P3^0;
+   6          sbit LCD_RW = P3^1;
+   7          sbit LCD_E  = P3^2;
+   8          #define LCD_DATA P2
+   9          
+  10          // 延时函数（约 1ms @ 12MHz）
+  11          void delay_ms(unsigned int ms) {
+  12   1          unsigned int i, j;
+  13   1          for (i = 0; i < ms; i++)
+  14   1              for (j = 0; j < 114; j++);
+  15   1      }
+  16          
+  17          // 简易短延时
+  18          void delay_us(unsigned char us) {
+  19   1          while (us--) {
+  20   2              _nop_();
+  21   2          }
+  22   1      }
+  23          
+  24          // 写指令函数
+  25          void LCD_WriteCmd(unsigned char cmd) {
+  26   1          LCD_RS = 0;       // 0: 指令寄存器
+  27   1          LCD_RW = 0;       // 0: 写操作
+  28   1          LCD_DATA = cmd;   // 送出指令数据
+  29   1          delay_us(5);
+  30   1          LCD_E = 1;        // 产生使能高脉冲
+  31   1          delay_us(10);
+  32   1          LCD_E = 0;
+  33   1          delay_ms(2);      // 指令执行需要时间
+  34   1      }
+  35          
+  36          // 写数据函数
+  37          void LCD_WriteData(unsigned char dat) {
+  38   1          LCD_RS = 1;       // 1: 数据寄存器
+  39   1          LCD_RW = 0;       // 0: 写操作
+  40   1          LCD_DATA = dat;   // 送出显示数据
+  41   1          delay_us(5);
+  42   1          LCD_E = 1;        // 产生使能高脉冲
+  43   1          delay_us(10);
+  44   1          LCD_E = 0;
+  45   1          delay_ms(1);
+  46   1      }
+  47          
+  48          // LCD1602 初始化
+  49          void LCD_Init(void) {
+  50   1          delay_ms(15);
+  51   1          LCD_WriteCmd(0x38); // 8位数据接口，两行显示，5x7点阵
+  52   1          delay_ms(5);
+  53   1          LCD_WriteCmd(0x38);
+  54   1          LCD_WriteCmd(0x0C); // 开启显示，光标不显示，不闪烁
+C51 COMPILER V9.59.0.0   MAIN                                                              10/04/2026 16:22:28 PAGE 2   
+
+  55   1          LCD_WriteCmd(0x06); // 写入数据后光标自增，屏幕不移动
+  56   1          LCD_WriteCmd(0x01); // 清屏
+  57   1          delay_ms(5);
+  58   1      }
+  59          
+  60          // 在指定行列显示字符串
+  61          // line: 行号 (1 或 2)
+  62          // col:  列号 (0 ~ 15)
+  63          void LCD_ShowString(unsigned char line, unsigned char col, char *str) {
+  64   1          unsigned char addr;
+  65   1          if (line == 1) {
+  66   2              addr = 0x80 + col; // 第一行起始地址 0x80
+  67   2          } else {
+  68   2              addr = 0xC0 + col; // 第二行起始地址 0xC0
+  69   2          }
+  70   1          LCD_WriteCmd(addr);
+  71   1          
+  72   1          while (*str != '\0') {
+  73   2              LCD_WriteData(*str);
+  74   2              str++;
+  75   2          }
+  76   1      }
+  77          
+  78          void main(void) {
+  79   1          LCD_Init(); // 初始化液晶屏
+  80   1          
+  81   1          // 第一行显示 "   Welcome to   "
+  82   1          LCD_ShowString(1, 3, "Welcome to");
+  83   1          
+  84   1          // 第二行显示 "Harbin Institute"（占满16格）
+  85   1          LCD_ShowString(2, 0, "Harbin Institute");
+  86   1          
+  87   1          while (1) {
+  88   2              // 主循环保持显示
+  89   2          }
+  90   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    210    ----
+   CONSTANT SIZE    =     28    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       4
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,283 @@
+C51 COMPILER V9.59.0.0   MAIN                                                              10/07/2026 18:06:23 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: F:\keilDownlaod\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings
+                    -\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg51.h>
+   2          
+   3          #define uchar signed char
+   4          #define uint  unsigned int
+   5          
+   6          // 常量定义
+   7          #define lcdrow    0xc0    // 设置起始行
+   8          #define lcdpage   0xb8    // 设置起始页
+   9          #define lcdcolumn 0x40    // 设置起始列
+  10          #define c_page_max   0x08 // 页数最大值
+  11          #define c_column_max 0x40 // 列数最大值
+  12          
+  13          // 端口定义
+  14          #define bus P0
+  15          sbit rst = P2^0;
+  16          sbit e   = P2^2;
+  17          sbit rw  = P2^3;
+  18          sbit rs  = P2^4;
+  19          sbit cs1 = P2^5;
+  20          sbit cs2 = P2^6;
+  21          
+  22          // 函数声明
+  23          void delayms(uint);                                                    // 延时 n ms
+  24          void delayus10(void);                                                  // 延时 10 us
+  25          void select(uchar);                                                    // 选择屏幕
+  26          void send_cmd(uchar);                                                  // 写命令
+  27          void send_data(uchar);                                                 // 写数据
+  28          void clear_screen(void);                                               // 清屏
+  29          void initial(void);                                                    // LCD 初始化
+  30          void display_zf(uchar, uchar, uchar, uchar);                           // 显示字符
+  31          void display_hz(uchar, uchar, uchar, uchar);                           // 显示汉字
+  32          void display(void);                                                    // 在 LCD 上显示
+  33          
+  34          // 字符表
+  35          // 宋体 12；此字体下对应的点阵为: 宽×高=8×16
+  36          // 取模方式: 纵向取模下高位, 从上到下, 从左到右取模
+  37          uchar code table_zf[] = 
+  38          {
+  39              // 文字: P
+  40              0x08,0xF8,0x08,0x08,0x08,0x08,0xF0,0x00,0x20,0x3F,0x21,0x01,0x01,
+  41              0x01,0x00,0x00,
+  42              // 文字: R
+  43              0x08,0xF8,0x88,0x88,0x88,0x88,0x70,0x00,0x20,0x3F,0x20,0x00,0x03,
+  44              0x0C,0x30,0x20,
+  45              // 文字: O
+  46              0xE0,0x10,0x08,0x08,0x08,0x10,0xE0,0x00,0x0F,0x10,0x20,0x20,0x20,
+  47              0x10,0x0F,0x00,
+  48              // 文字: T
+  49              0x18,0x08,0x08,0xF8,0x08,0x08,0x18,0x00,0x00,0x00,0x00,0x3F,0x20,
+  50              0x00,0x00,0x00,
+  51              // 文字: E
+  52              0x08,0xF8,0x88,0x88,0xE8,0x08,0x10,0x00,0x20,0x3F,0x20,0x20,0x23,
+  53              0x20,0x18,0x00,
+  54              // 文字: U
+C51 COMPILER V9.59.0.0   MAIN                                                              10/07/2026 18:06:23 PAGE 2   
+
+  55              0x08,0xF8,0x08,0x00,0x00,0x08,0xF8,0x08,0x00,0x1F,0x20,0x20,0x20,
+  56              0x20,0x1F,0x00,
+  57              // 文字: S
+  58              0x00,0x70,0x88,0x08,0x08,0x08,0x38,0x00,0x00,0x38,0x20,0x21,0x21,
+  59              0x22,0x1C,0x00
+  60          };
+  61          
+  62          // 汉字表
+  63          // 宋体 12；此字体下对应的点阵为: 宽×高=16×16
+  64          // 取模方式: 纵向取模下高位, 从上到下, 从左到右取模
+  65          uchar code table_hz[] = 
+  66          {
+  67              // 文字: 电
+  68              0x00,0x00,0xF8,0x48,0x48,0x48,0xFF,0x48,0x48,0x48,0x48,0x48,0xF8,
+  69              0x00,0x00,0x00,
+  70              0x00,0x00,0x0F,0x04,0x04,0x04,0x3F,0x44,0x44,0x44,0x44,0x4F,0x40,
+  71              0x70,0x00,0x00,
+  72              // 文字: 子
+  73              0x00,0x00,0x02,0x02,0x02,0x02,0xE2,0x12,0x0A,0x06,0x02,0x00,
+  74              0x80,0x00,0x00,
+  75              0x01,0x01,0x01,0x01,0x41,0x81,0x7F,0x01,0x01,0x01,0x01,0x01,
+  76              0x01,0x01,0x00,
+  77              // 文字: 设
+  78              0x40,0x41,0xCE,0x04,0x00,0x80,0x40,0xBE,0x82,0x82,0x82,0xBE,
+  79              0xC0,0x40,0x40,0x00,
+  80              0x00,0x00,0x7F,0x20,0x90,0x80,0x40,0x43,0x2C,0x10,0x10,0x2C,
+  81              0x43,0xC0,0x40,0x00,
+  82              // 文字: 计
+  83              0x20,0x21,0x2E,0xE4,0x00,0x00,0x20,0x20,0x20,0x20,0xFF,0x20,0x20,
+  84              0x20,0x20,0x00,
+  85              0x00,0x00,0x7F,0x20,0x10,0x08,0x08,0x00,0x00,0xFF,0x00,0x00,
+  86              0x00,0x00,0x00,0x00,
+  87              // 文字: 与
+  88              0x00,0x00,0x00,0x00,0x7E,0x48,0x48,0x48,0x48,0x48,0x48,0x48,
+  89              0xCC,0x08,0x00,
+  90              0x00,0x04,0x04,0x04,0x04,0x04,0x04,0x04,0x24,0x46,0x44,0x20,
+  91              0x1F,0x00,0x00,
+  92              // 文字: 创
+  93              0x40,0x20,0xD0,0x4C,0x43,0x44,0x48,0xD8,0x30,0x10,0x00,0xFC,
+  94              0x00,0x00,0xFF,0x00,
+  95              0x00,0x00,0x3F,0x40,0x40,0x42,0x44,0x43,0x78,0x00,0x00,0x07,0x20,
+  96              0x40,0x3F,0x00,
+  97              // 文字: 新
+  98              0x20,0x24,0x2C,0x35,0xE6,0x34,0x2C,0x24,0x00,0xFC,0x24,0x24,
+  99              0xE2,0x22,0x22,0x00,
+ 100              0x21,0x11,0x4D,0x81,0x7F,0x05,0x59,0x21,0x18,0x07,0x00,0x00,
+ 101              0xFF,0x00,0x00,0x00,
+ 102              // 文字: 的
+ 103              0x00,0xF8,0x8C,0x8B,0x88,0xF8,0x40,0x30,0x8F,0x08,0x08,0x08,
+ 104              0x08,0xF8,0x00,0x00,
+ 105              0x00,0x7F,0x10,0x10,0x10,0x3F,0x00,0x00,0x03,0x26,0x40,0x20,
+ 106              0x1F,0x00,0x00,
+ 107              // 文字: 最
+ 108              0x40,0x40,0xC0,0x5F,0x55,0x55,0xD5,0x55,0x55,0x55,0x55,0x5F,
+ 109              0x40,0x40,0x40,0x00,
+ 110              0x20,0x20,0x3F,0x15,0x15,0x15,0xFF,0x48,0x23,0x15,0x09,0x15,0x23,
+ 111              0x61,0x20,0x00,
+ 112              // 文字: 佳
+ 113              0x40,0x20,0xF0,0x1C,0x47,0x44,0x48,0x48,0xFF,0x48,0x48,
+ 114              0x4C,0x68,0x40,0x00,
+ 115              0x00,0x00,0xFF,0x00,0x40,0x44,0x44,0x44,0x7F,0x44,0x44,0x46,
+ 116              0x64,0x40,0x00,
+C51 COMPILER V9.59.0.0   MAIN                                                              10/07/2026 18:06:23 PAGE 3   
+
+ 117              // 文字: 平
+ 118              0x00,0x01,0x05,0x09,0x71,0x21,0x01,0xFF,0x01,0x41,0x21,0x1D,0x09,
+ 119              0x01,0x00,0x00,
+ 120              0x01,0x01,0x01,0x01,0x01,0x01,0x01,0xFF,0x01,0x01,0x01,0x01,0x01,
+ 121              0x01,0x01,0x00,
+ 122              // 文字: 台
+ 123              0x00,0x00,0x40,0x60,0x50,0x48,0x44,0x63,0x22,0x20,0x20,0x28,0x70,
+ 124              0x20,0x00,0x00,
+ 125              0x00,0x00,0x00,0x7F,0x21,0x21,0x21,0x21,0x21,0x21,0x21,0x7F,0x00,
+ 126              0x00,0x00,0x00
+ 127          };
+ 128          
+ 129          // 延时 10 us 函数
+ 130          void delayus10(void)
+ 131          {
+ 132   1          uchar i = 5;
+ 133   1          while(--i);
+ 134   1      }
+ 135          
+ 136          // 延时 10 ms 函数 (原书此处写为 delayms，实为粗略延时循环)
+ 137          void delayms(uint j)
+ 138          {
+ 139   1          uchar i = 250;
+ 140   1          for(; j > 0; j--)
+ 141   1          {
+ 142   2              while(--i); i = 249; while(--i); i = 250;
+ 143   2          }
+ 144   1      }
+ 145          
+ 146          // 屏幕选择: cs=0 选择双屏, cs=1 选择左半屏, cs=2 选择右半屏
+ 147          void select(uchar cs)
+ 148          {
+ 149   1          if(cs == 0)      { cs1 = 1; cs2 = 1; }
+ 150   1          else if(cs == 1) { cs1 = 1; cs2 = 0; }
+ 151   1          else             { cs1 = 0; cs2 = 1; }
+ 152   1      }
+ 153          
+ 154          // 写命令函数
+ 155          void send_cmd(uchar cmd)
+ 156          {
+ 157   1          rs = 0; rw = 0; bus = cmd; delayus10(); e = 1; e = 0;
+ 158   1      }
+ 159          
+ 160          // 写数据函数
+ 161          void send_data(uchar dat)
+ 162          {
+ 163   1          rs = 1; rw = 0; bus = dat; delayus10(); e = 1; e = 0;
+ 164   1      }
+ 165          
+ 166          // 清屏函数
+ 167          void clear_screen(void)
+ 168          {
+ 169   1          uchar c_page, c_column;
+ 170   1          select(0);
+ 171   1          for(c_page = 0; c_page < c_page_max; c_page++)
+ 172   1          {
+ 173   2              send_cmd(c_page + lcdpage);
+ 174   2              send_cmd(lcdcolumn);
+ 175   2              for(c_column = 0; c_column < c_column_max; c_column++)
+ 176   2              {
+ 177   3                  send_data(0x00);
+ 178   3              }
+C51 COMPILER V9.59.0.0   MAIN                                                              10/07/2026 18:06:23 PAGE 4   
+
+ 179   2          }
+ 180   1      }
+ 181          
+ 182          // LCD 初始化函数
+ 183          void initial(void)
+ 184          {
+ 185   1          select(0);
+ 186   1          rst = 0; delayms(10); rst = 1;
+ 187   1          clear_screen();
+ 188   1          send_cmd(lcdrow);
+ 189   1          send_cmd(lcdcolumn);
+ 190   1          send_cmd(lcdpage);
+ 191   1          send_cmd(0x3F);
+ 192   1      }
+ 193          
+ 194          // 写字符: c_page 为当前页, c_column 为当前列, num 为字符数, offset 为所取字符在缓冲区中的偏移单位
+ 195          void display_zf(uchar c_page, uchar c_column, uchar num, uchar offset)
+ 196          {
+ 197   1          uchar c1, c2, c3;
+ 198   1          for(c1 = 0; c1 < num; c1++)
+ 199   1          {
+ 200   2              for(c2 = 0; c2 < 2; c2++)
+ 201   2              {
+ 202   3                  for(c3 = 0; c3 < 8; c3++)
+ 203   3                  {
+ 204   4                      send_cmd(lcdpage + c_page + c2);
+ 205   4                      send_cmd(lcdcolumn + c_column + c1 * 8 + c3);
+ 206   4                      send_data(table_zf[(c1 + offset) * 16 + c2 * 8 + c3]);
+ 207   4                  }
+ 208   3              }
+ 209   2          }
+ 210   1      }
+ 211          
+ 212          // 写汉字: c_page 为当前页, c_column 为当前列, num 为字符数, offset 为所取汉字在缓冲区中的偏移单位
+ 213          void display_hz(uchar c_page, uchar c_column, uchar num, uchar offset)
+ 214          {
+ 215   1          uchar c1, c2, c3;
+ 216   1          for(c1 = 0; c1 < num; c1++)
+ 217   1          {
+ 218   2              for(c2 = 0; c2 < 2; c2++)
+ 219   2              {
+ 220   3                  for(c3 = 0; c3 < 16; c3++)
+ 221   3                  {
+ 222   4                      send_cmd(lcdpage + c_page + c2);
+ 223   4                      send_cmd(lcdcolumn + c_column + c1 * 16 + c3);
+ 224   4                      send_data(table_hz[(c1 + offset) * 32 + c2 * 16 + c3]);
+ 225   4                  }
+ 226   3              }
+ 227   2          }
+ 228   1      }
+ 229          
+ 230          // 在 LCD 上显示函数
+ 231          void display(void)
+ 232          {
+ 233   1          select(1);
+ 234   1          display_zf(0, 40, 3, 0); // 显示 "PRO"
+ 235   1          display_hz(2, 0, 4, 0);  // 显示 "电子设计"
+ 236   1          display_hz(4, 32, 2, 8); // 显示 "最佳"
+ 237   1      
+ 238   1          select(2);
+ 239   1          display_zf(0, 0, 4, 3);  // 显示 "TEUS"
+ 240   1          display_hz(2, 0, 4, 4);  // 显示 "与创新的"
+C51 COMPILER V9.59.0.0   MAIN                                                              10/07/2026 18:06:23 PAGE 5   
+
+ 241   1          display_hz(4, 0, 2, 10); // 显示 "平台"
+ 242   1      }
+ 243          
+ 244          void main(void)
+ 245          {
+ 246   1          initial();
+ 247   1          display();
+ 248   1          clear_screen();
+ 249   1          display();
+ 250   1          while(1);
+ 251   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    592    ----
+   CONSTANT SIZE    =    489    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       8
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
